@@ -8,7 +8,7 @@ target_include_directories(microfmt INTERFACE include)
 option(MICROFMT_BUILD_TESTING "" OFF)
 
 if(MICROFMT_BUILD_TESTING)
-  add_compile_options(-Wall -Wextra)
+  add_compile_options(-Wall -Wextra -Wshadow)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-fsanitize=address)
     add_link_options(-fsanitize=address)

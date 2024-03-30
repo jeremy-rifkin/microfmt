@@ -28,7 +28,7 @@ namespace microfmt {
         }
 
         #ifdef _MSC_VER
-        std::uint64_t clz(std::uint64_t value) {
+        inline std::uint64_t clz(std::uint64_t value) {
             unsigned long out = 0;
             #ifdef _WIN64
             _BitScanForward64(&out, value);
@@ -41,7 +41,7 @@ namespace microfmt {
             return out;
         }
         #else
-        std::uint64_t clz(std::uint64_t value) {
+        inline std::uint64_t clz(std::uint64_t value) {
             return __builtin_clzll(value);
         }
         #endif
@@ -95,7 +95,7 @@ namespace microfmt {
             }
         }
 
-        std::string to_string(std::uint64_t value, const format_options& options) {
+        inline std::string to_string(std::uint64_t value, const format_options& options) {
             switch(options.base) {
                 case 'd': return std::to_string(value);
                 case 'H': return to_string<4, 0xf>(value, "0123456789ABCDEF");
@@ -164,12 +164,12 @@ namespace microfmt {
                     case value_type::int64_value:
                         {
                             std::string str;
-                            std::int64_t value = int64_value;
-                            if(value < 0) {
+                            std::int64_t val = int64_value;
+                            if(val < 0) {
                                 str += '-';
-                                value *= -1;
+                                val *= -1;
                             }
-                            str += to_string(static_cast<std::uint64_t>(value), options);
+                            str += to_string(static_cast<std::uint64_t>(val), options);
                             do_write(out, str.begin(), str.end(), options);
                         }
                         break;
@@ -196,7 +196,7 @@ namespace microfmt {
             }
         };
 
-        int parse_int(std::string::const_iterator begin, std::string::const_iterator end) {
+        inline int parse_int(std::string::const_iterator begin, std::string::const_iterator end) {
             int x = 0;
             for(auto it = begin; it != end; it++) {
                 MICROFMT_ASSERT(isdigit(*it));
