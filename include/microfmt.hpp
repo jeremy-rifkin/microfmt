@@ -1,6 +1,8 @@
 #ifndef MICROFMT_HPP
 #define MICROFMT_HPP
 
+// Copyright (c) 2024 Jeremy Rifkin; MIT License
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -147,12 +149,9 @@ namespace microfmt {
 
             int unwrap_int() const {
                 switch(value) {
-                    case value_type::int64_value:
-                        return int64_value;
-                    case value_type::uint64_value:
-                        return uint64_value;
-                    default:
-                        MICROFMT_ASSERT(false);
+                    case value_type::int64_value:  return int64_value;
+                    case value_type::uint64_value: return uint64_value;
+                    default: MICROFMT_ASSERT(false);
                 }
             }
 
