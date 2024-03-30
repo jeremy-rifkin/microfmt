@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(microfmt)
+project(microfmt LANGUAGES CXX)
 
 add_library(microfmt INTERFACE)
 target_include_directories(microfmt INTERFACE include)
