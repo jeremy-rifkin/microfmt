@@ -301,7 +301,7 @@ namespace microfmt {
     #if defined(__cpp_lib_string_view) && __cpp_lib_string_view >= 201606L
     std::string format(std::string_view fmt, Args&&... args) {
     #else
-    std::string format(const std::string& format_string, Args&&... args) {
+    std::string format(const std::string& fmt, Args&&... args) {
     #endif
         return detail::format<sizeof...(args)>(fmt.begin(), fmt.end(), {detail::format_value(args)...});
     }
