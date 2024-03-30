@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
+#include <fmt/compile.h>
 #include "microfmt.hpp"
 
 #include <sstream>
@@ -83,5 +84,16 @@ static void Fmt(benchmark::State& state) {
   }
 }
 BENCHMARK(Fmt);
+
+static void FmtCompile(benchmark::State& state) {
+  int x = 0;
+  int y = 1000;
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(fmt::format(FMT_COMPILE("{:#010x} {:<8}"), x, y));
+    x++;
+    y += 2;
+  }
+}
+BENCHMARK(FmtCompile);
 
 BENCHMARK_MAIN();
