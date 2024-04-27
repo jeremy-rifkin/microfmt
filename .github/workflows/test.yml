@@ -12,6 +12,9 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
+    - name: test output
+      if: always()
+      run: cat build/Testing/Temporary/LastTest.log
   test-macos:
     runs-on: macos-14
     steps:
@@ -19,6 +22,9 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
+    - name: test output
+      if: always()
+      run: cat build/Testing/Temporary/LastTest.log
   test-mingw:
     runs-on: windows-2022
     steps:
@@ -26,6 +32,9 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
+    - name: test output
+      if: always()
+      run: cat build/Testing/Temporary/LastTest.log
   test-windows:
     runs-on: windows-2022
     steps:
@@ -34,3 +43,6 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1.13.0
     - name: test
       run: make test-msvc
+    - name: test output
+      if: always()
+      run: cat build/Testing/Temporary/LastTest.log
