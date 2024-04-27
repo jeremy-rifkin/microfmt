@@ -1,0 +1,33 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: build
+      run: make build
+  build-macos:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - name: build
+      run: make build
+  build-mingw:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+    - name: build
+      run: make build
+  build-windows:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+    - name: Enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+    - name: build
+      run: make debug-msvc

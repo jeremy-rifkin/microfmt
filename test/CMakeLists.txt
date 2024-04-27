@@ -1,11 +1,3 @@
-include(CTest)
-
-add_executable(example example.cpp)
-target_link_libraries(example PRIVATE microfmt)
-
-add_executable(perf perf.cpp)
-target_link_libraries(perf PRIVATE microfmt)
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -16,10 +8,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(test test.cpp)
-target_link_libraries(test GTest::gtest_main microfmt)
-add_test(NAME test COMMAND test)
-
+set(BENCHMARK_ENABLE_TESTING OFF)
 FetchContent_Declare(
   googlebenchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
@@ -32,6 +21,28 @@ FetchContent_Declare(
   GIT_TAG e69e5f977d458f2650bb346dadf2ad30c5320281 # v10.2.1
 )
 FetchContent_MakeAvailable(fmt)
+
+include(CTest)
+
+if(NOT MSVC)
+  add_compile_options(-Wall -Wextra -Wshadow)
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
+endif()
+
+add_executable(example example.cpp)
+target_link_libraries(example PRIVATE microfmt)
+
+if(NOT MSVC)
+  add_executable(perf perf.cpp)
+  target_link_libraries(perf PRIVATE microfmt)
+endif()
+
+add_executable(unittests unittests.cpp)
+target_link_libraries(unittests GTest::gtest_main microfmt)
+add_test(NAME unittests COMMAND unittests)
 
 add_executable(bench bench.cpp)
 target_link_libraries(bench PRIVATE microfmt benchmark::benchmark fmt::fmt)

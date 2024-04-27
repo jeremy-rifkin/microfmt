@@ -5,7 +5,9 @@
 
 #include <sstream>
 #include <iomanip>
+#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
 #include <format>
+#endif
 
 static void OSS(benchmark::State& state) {
   int x = 0;
@@ -63,6 +65,7 @@ static void Stringf(benchmark::State& state) {
 }
 BENCHMARK(Stringf);
 
+#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
 static void Stdfmt(benchmark::State& state) {
   int x = 0;
   int y = 1000;
@@ -73,6 +76,7 @@ static void Stdfmt(benchmark::State& state) {
   }
 }
 BENCHMARK(Stdfmt);
+#endif
 
 static void Fmt(benchmark::State& state) {
   int x = 0;
