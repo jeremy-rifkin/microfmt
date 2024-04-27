@@ -1,5 +1,8 @@
 # Microfmt
 
+[![build](https://github.com/jeremy-rifkin/microfmt/actions/workflows/build.yml/badge.svg)](https://github.com/jeremy-rifkin/microfmt/actions/workflows/build.yml)
+[![test](https://github.com/jeremy-rifkin/microfmt/actions/workflows/test.yml/badge.svg)](https://github.com/jeremy-rifkin/microfmt/actions/workflows/test.yml)
+
 Microfmt is a really small (~300 line) formatting library. It's much more primitive than std::format or libfmt but it's
 small and fast.
 
