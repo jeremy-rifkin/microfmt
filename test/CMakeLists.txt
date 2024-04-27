@@ -34,14 +34,17 @@ endif()
 
 add_executable(example example.cpp)
 target_link_libraries(example PRIVATE microfmt)
+target_compile_features(example PRIVATE cxx_std_20)
 
 if(NOT MSVC)
   add_executable(perf perf.cpp)
   target_link_libraries(perf PRIVATE microfmt)
+  target_compile_features(perf PRIVATE cxx_std_20)
 endif()
 
 add_executable(unittests unittests.cpp)
 target_link_libraries(unittests GTest::gtest_main microfmt)
+target_compile_features(unittests PRIVATE cxx_std_20)
 add_test(NAME unittests COMMAND unittests)
 
 add_executable(bench bench.cpp)

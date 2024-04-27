@@ -9,18 +9,21 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
   test-macos:
     runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
   test-mingw:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - name: test
       run: make test
   test-windows:
