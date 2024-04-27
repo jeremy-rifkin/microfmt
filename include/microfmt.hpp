@@ -320,7 +320,7 @@ namespace microfmt {
 
     // working around an old msvc bug https://godbolt.org/z/88T8hrzzq mre: https://godbolt.org/z/drd8echbP
     inline std::string format(const char* fmt) {
-        return std::string(fmt);
+        return detail::format<1>(fmt, fmt + std::strlen(fmt), {detail::format_value(1)});
     }
 
     template<typename S, typename... Args>
