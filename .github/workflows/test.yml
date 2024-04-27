@@ -46,3 +46,17 @@ jobs:
     - name: test output
       if: always()
       run: cat build/Testing/Temporary/LastTest.log
+  test-windows-x86:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+    - name: Enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+    - name: test
+      run: |
+           cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DMICROFMT_BUILD_TESTING=On -A Win32
+           cmake --build build --config Debug
+           cmake --build build --target RUN_TESTS --config Debug
+    - name: test output
+      if: always()
+      run: cat build/Testing/Temporary/LastTest.log
