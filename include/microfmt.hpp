@@ -209,63 +209,57 @@ namespace microfmt {
                 }
             };
             for(; it != fmt_end; it++) {
-                if(*it == '{') {
-                    if(peek(1) == '{') {
-                        // try to handle escape
-                        str += '{';
+                if((*it == '{' || *it == '}') && peek(1) == *it) { // parse {{ and }}}} escapes
+                    str += *it;
+                    it++;
+                } else if(*it == '{') {
+                    // parse format string
+                    it++;
+                    if(it == fmt_end) {
+                        break;
+                    }
+                    format_options options;
+                    // try to parse alignment
+                    if(*it == '<' || *it == '>') {
+                        options.align = *it == '<' ? alignment::left : alignment::right;
                         it++;
-                    } else {
-                        // parse format string
-                        it++;
+                    }
+                    // try to parse width
+                    auto width = read_number();
+                    if(width != -1) {
+                        options.width = width;
+                    } else if(*it == '{' && peek(1) == '}') { // try to parse variable width
+                        it += 2;
                         if(it == fmt_end) {
                             break;
                         }
-                        format_options options;
-                        // try to parse alignment
-                        if(*it == '<' || *it == '>') {
-                            options.align = *it == '<' ? alignment::left : alignment::right;
-                            it++;
-                        }
-                        // try to parse width
-                        auto width = read_number();
-                        if(width != -1) {
-                            options.width = width;
-                        } else if(*it == '{' && peek(1) == '}') { // try to parse variable width
-                            it += 2;
-                            if(it == fmt_end) {
-                                break;
-                            }
-                            options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
-                        }
-                        // try to parse fill/base
-                        if(*it == ':') {
-                            it++;
-                            // try to parse fill
-                            if(*it != '}' && peek(1) != '}') {
-                                // two chars before the }, treat as fill+base
-                                options.fill = *it++;
+                        options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
+                    }
+                    // try to parse fill/base
+                    if(*it == ':') {
+                        it++;
+                        // try to parse fill
+                        if(*it != '}' && peek(1) != '}') {
+                            // two chars before the }, treat as fill+base
+                            options.fill = *it++;
+                            options.base = *it++;
+                        } else if(*it != '}') {
+                            // one char before the }, treat as base if possible
+                            if(*it == 'd' || *it == 'h' || *it == 'H' || *it == 'o' || *it == 'b') {
                                 options.base = *it++;
-                            } else if(*it != '}') {
-                                // one char before the }, treat as base if possible
-                                if(*it == 'd' || *it == 'h' || *it == 'H' || *it == 'o' || *it == 'b') {
-                                    options.base = *it++;
-                                } else {
-                                    options.fill = *it++;
-                                }
                             } else {
-                                break;
+                                options.fill = *it++;
                             }
-                        }
-                        if(*it != '}') {
+                        } else {
                             break;
                         }
-                        if(arg_i < args.size()) {
-                            args[arg_i++].write(str, options);
-                        }
                     }
-                } else if(*it == '}' && peek(1) == '}') { // parse }} escape
-                    str += '}';
-                    it++;
+                    if(*it != '}') {
+                        break;
+                    }
+                    if(arg_i < args.size()) {
+                        args[arg_i++].write(str, options);
+                    }
                 } else {
                     str += *it;
                 }
