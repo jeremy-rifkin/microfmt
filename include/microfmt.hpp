@@ -1,33 +1,24 @@
 #ifndef MICROFMT_HPP
 #define MICROFMT_HPP
 
-// Copyright (c) 2024 Jeremy Rifkin; MIT License
-
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <string>
 #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
-#include <string_view>
+ #include <string_view>
 #endif
 #ifdef _MSC_VER
-#include <intrin.h>
+ #include <intrin.h>
 #endif
 
-// {[[align][width]:[fill][base]]}
-// width: number or {}
+// https://github.com/jeremy-rifkin/microfmt
+// Format: {[align][width][:[fill][base]]}  # width: number or {}
 
 namespace microfmt {
     namespace detail {
-        #define STR2(x) #x
-        #define STR(x) STR2(x)
-        #define MICROFMT_ASSERT(expr) if(!(expr)) { \
-            throw std::runtime_error("Microfmt check failed" __FILE__ ":" STR(__LINE__) ": " #expr); \
-        }
-
         inline std::uint64_t clz(std::uint64_t value) {
             #ifdef _MSC_VER
              unsigned long out = 0;
@@ -60,7 +51,6 @@ namespace microfmt {
 
         template<typename It> void do_write(std::string& out, It begin, It end, const format_options& options) {
             auto size = end - begin;
-            MICROFMT_ASSERT(size >= 0);
             if(static_cast<std::size_t>(size) >= options.width) {
                 out.append(begin, end);
             } else {
@@ -100,13 +90,11 @@ namespace microfmt {
 
         inline std::string to_string(std::uint64_t value, const format_options& options) {
             switch(options.base) {
-                case 'd': return std::to_string(value);
                 case 'H': return to_string<4, 0xf>(value, "0123456789ABCDEF");
                 case 'h': return to_string<4, 0xf>(value);
                 case 'o': return to_string<3, 0x7>(value);
                 case 'b': return to_string<1, 0x1>(value);
-                default:
-                    MICROFMT_ASSERT(false);
+                default: return std::to_string(value); // failure: decimal
             }
         }
 
@@ -154,7 +142,7 @@ namespace microfmt {
                 switch(value) {
                     case value_type::int64_value:  return static_cast<int>(int64_value);
                     case value_type::uint64_value: return static_cast<int>(uint64_value);
-                    default: MICROFMT_ASSERT(false);
+                    default: return 0; // failure: just 0
                 }
             }
 
@@ -193,48 +181,34 @@ namespace microfmt {
                     case value_type::c_string_value:
                         do_write(out, c_string_value, c_string_value + std::strlen(c_string_value), options);
                         break;
-                    default:
-                        MICROFMT_ASSERT(false);
-                }
+                } // failure: nop
             }
         };
 
-        inline int parse_int(const char* begin, const char* end) {
-            int x = 0;
-            for(auto it = begin; it != end; it++) {
-                MICROFMT_ASSERT(isdigit(*it));
-                x *= 10;
-                x += *it - '0';
-            }
-            return x;
-        }
-
-        template<std::size_t N>
-        std::string format(const char* fmt_begin, const char* fmt_end, std::array<format_value, N> args) {
+        template<std::size_t N, typename It>
+        std::string format(It fmt_begin, It fmt_end, std::array<format_value, N> args) {
             std::string str;
             std::size_t arg_i = 0;
             auto it = fmt_begin;
             auto peek = [&] (std::size_t dist) -> char { // 0 on failure
-                if(it != fmt_end) {
-                    return *(it + dist);
-                } else {
-                    return 0;
-                }
+                return it != fmt_end ? *(it + dist) : 0;
             };
             auto read_number = [&] () -> int { // -1 on failure
                 auto scan = it;
+                int num = 0;
                 while(scan != fmt_end && isdigit(*scan)) {
+                    num *= 10;
+                    num += *scan - '0';
                     scan++;
                 }
                 if(scan != it) {
-                    int val = parse_int(it, scan);
                     it = scan;
-                    return val;
+                    return num;
                 } else {
                     return -1;
                 }
             };
-            while(it != fmt_end) {
+            for(; it != fmt_end; it++) {
                 if(*it == '{') {
                     if(peek(1) == '{') {
                         // try to handle escape
@@ -243,7 +217,9 @@ namespace microfmt {
                     } else {
                         // parse format string
                         it++;
-                        MICROFMT_ASSERT(it != fmt_end);
+                        if(it == fmt_end) {
+                            break;
+                        }
                         format_options options;
                         // try to parse alignment
                         if(*it == '<' || *it == '>') {
@@ -254,11 +230,12 @@ namespace microfmt {
                         auto width = read_number();
                         if(width != -1) {
                             options.width = width;
-                        } else if(*it == '{') { // try to parse variable width
-                            MICROFMT_ASSERT(peek(1) == '}');
+                        } else if(*it == '{' && peek(1) == '}') { // try to parse variable width
                             it += 2;
-                            MICROFMT_ASSERT(arg_i < args.size());
-                            options.width = args[arg_i++].unwrap_int();
+                            if(it == fmt_end) {
+                                break;
+                            }
+                            options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
                         }
                         // try to parse fill/base
                         if(*it == ':') {
@@ -276,25 +253,22 @@ namespace microfmt {
                                     options.fill = *it++;
                                 }
                             } else {
-                                MICROFMT_ASSERT(false);
+                                break;
                             }
                         }
-                        MICROFMT_ASSERT(*it == '}');
-                        MICROFMT_ASSERT(arg_i < args.size());
-                        args[arg_i++].write(str, options);
+                        if(*it != '}') {
+                            break;
+                        }
+                        if(arg_i < args.size()) {
+                            args[arg_i++].write(str, options);
+                        }
                     }
-                } else if(*it == '}') {
-                    // parse }} escape
-                    if(peek(1) == '}') {
-                        str += '}';
-                        it++;
-                    } else {
-                        MICROFMT_ASSERT(false);
-                    }
+                } else if(*it == '}' && peek(1) == '}') { // parse }} escape
+                    str += '}';
+                    it++;
                 } else {
                     str += *it;
                 }
-                it++;
             }
             return str;
         }
@@ -307,7 +281,7 @@ namespace microfmt {
     }
 
     inline std::string format(std::string_view fmt) {
-        return std::string(fmt);
+        return detail::format<0>(fmt.begin(), fmt.end(), {});
     }
     #endif
 
