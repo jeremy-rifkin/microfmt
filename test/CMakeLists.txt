@@ -24,9 +24,27 @@ FetchContent_MakeAvailable(fmt)
 
 include(CTest)
 
-if(NOT MSVC)
-  add_compile_options(-Wall -Wextra -Wshadow)
+target_compile_options(
+  microfmt
+  INTERFACE
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -Wshadow -Wundef>
+  $<$<CXX_COMPILER_ID:GNU>:-Wuseless-cast -Wnonnull-compare>
+  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+)
+
+if(CMAKE_GENERATOR STREQUAL "Ninja")
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+  endif()
+  if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+  elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcolor-diagnostics")
+  endif()
 endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
   add_compile_options(-fsanitize=address)
   add_link_options(-fsanitize=address)

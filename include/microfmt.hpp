@@ -191,7 +191,7 @@ namespace microfmt {
             std::size_t arg_i = 0;
             auto it = fmt_begin;
             auto peek = [&] (std::size_t dist) -> char { // 0 on failure
-                return fmt_end - it > dist ? *(it + dist) : 0;
+                return fmt_end - it > unsigned(dist) ? *(it + dist) : 0;
             };
             auto read_number = [&] () -> int { // -1 on failure
                 auto scan = it;
