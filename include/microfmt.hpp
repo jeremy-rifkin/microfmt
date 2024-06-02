@@ -191,7 +191,7 @@ namespace microfmt {
             std::size_t arg_i = 0;
             auto it = fmt_begin;
             auto peek = [&] (std::size_t dist) -> char { // 0 on failure
-                return it + dist < fmt_end ? *(it + dist) : 0;
+                return fmt_end - it > dist ? *(it + dist) : 0;
             };
             auto read_number = [&] () -> int { // -1 on failure
                 auto scan = it;
@@ -234,7 +234,7 @@ namespace microfmt {
                         // try to parse fill/base
                         if(it != fmt_end && *it == ':') {
                             it++;
-                            if(it + 1 < fmt_end && *it != '}' && peek(1) != '}') { // two chars before the }, fill+base
+                            if(fmt_end - it > 1 && *it != '}' && peek(1) != '}') { // two chars before the }, fill+base
                                 options.fill = *it++;
                                 options.base = *it++;
                             } else if(it != fmt_end && *it != '}') { // one char before the }, just base
