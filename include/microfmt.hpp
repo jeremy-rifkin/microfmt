@@ -15,7 +15,7 @@
 #endif
 
 // https://github.com/jeremy-rifkin/microfmt
-// Format: {[align][width][:[fill][base]]}  # width: number or {}
+// Format: {[align[width]][:[fill][base]]}  # width: number or {}
 
 namespace microfmt {
     namespace detail {
@@ -218,17 +218,13 @@ namespace microfmt {
                         format_options options;
                         // try to parse alignment
                         if(*it == '<' || *it == '>') {
-                            options.align = *it == '<' ? alignment::left : alignment::right;
-                            it++;
-                            if(it == fmt_end) {
-                                return false;
-                            }
+                            options.align = *it++ == '<' ? alignment::left : alignment::right;
                         }
                         // try to parse width
                         auto width = read_number(); // handles fmt_end check
                         if(width != -1) {
                             options.width = width;
-                        } else if(*it == '{') { // try to parse variable width
+                        } else if(it != fmt_end && *it == '{') { // try to parse variable width
                             if(peek(1) != '}') {
                                 return false;
                             }
@@ -238,7 +234,7 @@ namespace microfmt {
                         // try to parse fill/base
                         if(it != fmt_end && *it == ':') {
                             it++;
-                            if(it != fmt_end && *it != '}' && peek(1) != '}') { // two chars before the }, fill+base
+                            if(it + 1 < fmt_end && *it != '}' && peek(1) != '}') { // two chars before the }, fill+base
                                 options.fill = *it++;
                                 options.base = *it++;
                             } else if(it != fmt_end && *it != '}') { // one char before the }, just base

@@ -159,4 +159,8 @@ TEST(MicrofmtTest, erroneous_input) {
     EXPECT_EQ(microfmt::format("a {<{"_sv), "a {<{");
     EXPECT_EQ(microfmt::format("a {<{}"_sv, 12, 20), "a {<20");
     EXPECT_EQ(microfmt::format("a {<{}:"_sv, 12, 20), "a {<20:");
+    EXPECT_EQ(microfmt::format("{>10:q"_sv, 20), "{>10:q");
+    EXPECT_EQ(microfmt::format("{>10:qq"_sv, 20), "{>10:qq");
+    EXPECT_EQ(microfmt::format("{>10:qaaaaaa"_sv, 20), "{>10:qaaaaaa");
+    EXPECT_EQ(microfmt::format("{>10:qqaaaaaa"_sv, 20), "{>10:qqaaaaaa");
 }
