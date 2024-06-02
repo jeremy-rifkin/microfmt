@@ -15,7 +15,7 @@
 #endif
 
 // https://github.com/jeremy-rifkin/microfmt
-// Format: {[align[width]][:[fill][base]]}  # width: number or {}
+// Format: {[align][width][:[fill][base]]}  # width: number or {}
 
 namespace microfmt {
     namespace detail {
