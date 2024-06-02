@@ -209,7 +209,7 @@ namespace microfmt {
                 }
             };
             for(; it != fmt_end; it++) {
-                if((*it == '{' || *it == '}') && peek(1) == *it) { // parse {{ and }}}} escapes
+                if((*it == '{' || *it == '}') && peek(1) == *it) { // parse {{ and }} escapes
                     it++;
                 } else if(*it == '{' && it + 1 != fmt_end) {
                     auto saved_it = it;
