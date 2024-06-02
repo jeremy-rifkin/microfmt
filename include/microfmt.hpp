@@ -213,46 +213,44 @@ namespace microfmt {
                     it++;
                 } else if(*it == '{' && it + 1 != fmt_end) {
                     auto saved_it = it;
-                    auto handle_formatter = [&] () mutable {
+                    auto handle_formatter = [&] () {
                         it++;
                         format_options options;
                         // try to parse alignment
                         if(*it == '<' || *it == '>') {
                             options.align = *it == '<' ? alignment::left : alignment::right;
                             it++;
+                            if(it == fmt_end) {
+                                return false;
+                            }
                         }
                         // try to parse width
                         auto width = read_number(); // handles fmt_end check
                         if(width != -1) {
                             options.width = width;
-                        } else if(*it == '{') { // try to parse variable width // TODO: FUCK
+                        } else if(*it == '{') { // try to parse variable width
                             if(peek(1) != '}') {
                                 return false;
                             }
                             it += 2;
-                            if(it == fmt_end) {
-                                return false;
-                            }
                             options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
                         }
                         // try to parse fill/base
-                        if(*it == ':') {
-                            it++; // TODO: Overflow....
-                            if(*it != '}' && peek(1) != '}') { // two chars before the }, treat as fill+base
+                        if(it != fmt_end && *it == ':') {
+                            it++;
+                            if(it != fmt_end && *it != '}' && peek(1) != '}') { // two chars before the }, fill+base
                                 options.fill = *it++;
                                 options.base = *it++;
-                            } else if(*it != '}') { // one char before the }, treat as base if possible
+                            } else if(it != fmt_end && *it != '}') { // one char before the }, just base
                                 if(*it == 'd' || *it == 'h' || *it == 'H' || *it == 'o' || *it == 'b') {
                                     options.base = *it++;
                                 } else {
                                     options.fill = *it++;
                                 }
-                            } else {
-                                return false; // TODO: A way to silently recover?
                             }
                         }
-                        if(*it != '}') {
-                            return false; // TODO
+                        if(it == fmt_end || *it != '}') {
+                            return false;
                         }
                         if(arg_i < args.size()) {
                             args[arg_i++].write(str, options);

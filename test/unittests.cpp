@@ -2,14 +2,27 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 #include <string_view>
 #include <string>
+#include <vector>
 using namespace std::literals;
 
 #include "microfmt.hpp"
 
-TEST(MicrofmtTest, Basic) {
+// String views from ""sv seem to be null terminated and asan doesn't compilain about one-past the end access
+// This is just a utility to create string views that will error with out of bounds access
+std::vector<std::unique_ptr<char[]>> string_store;
+std::string_view operator""_sv(const char* str, std::size_t length) {
+    auto buffer = std::make_unique<char[]>(length);
+    std::memcpy(buffer.get(), str, length);
+    std::string_view sv{buffer.get(), buffer.get() + length};
+    string_store.push_back(std::move(buffer));
+    return sv;
+}
+
+TEST(MicrofmtTest, basic) {
     EXPECT_EQ(microfmt::format("test"), "test");
     EXPECT_EQ(microfmt::format("a {} b", "foo"), "a foo b");
     EXPECT_EQ(microfmt::format("a {} b", "foo"s), "a foo b");
@@ -18,14 +31,24 @@ TEST(MicrofmtTest, Basic) {
     EXPECT_EQ(microfmt::format("a {} b"sv, 'x'), "a x b");
 }
 
-TEST(MicrofmtTest, alignment) {
+TEST(MicrofmtTest, width_and_alignment) {
     EXPECT_EQ(microfmt::format("a {20} b", "foo"), "a foo                  b");
     EXPECT_EQ(microfmt::format("a {<20} b", "foo"), "a foo                  b");
     EXPECT_EQ(microfmt::format("a {>20} b", "foo"), "a                  foo b");
+    // overflowing width
+    EXPECT_EQ(microfmt::format("a {<2} b", "foo"), "a foo b");
+    EXPECT_EQ(microfmt::format("a {>2} b", "foo"), "a foo b");
+    // trailing :'s
+    EXPECT_EQ(microfmt::format("a {20:} b"_sv, "foo"), "a foo                  b");
+    EXPECT_EQ(microfmt::format("a {>20:} b"_sv, "foo"), "a                  foo b");
 }
 
 TEST(MicrofmtTest, basic_numbers) {
     EXPECT_EQ(microfmt::format("a {<} {>} b", 1ULL<<62, -(1LL<<60)), "a 4611686018427387904 -1152921504606846976 b");
+    EXPECT_EQ(microfmt::format("a {} b", (short)12), "a 12 b");
+    EXPECT_EQ(microfmt::format("a {} b", (long)12), "a 12 b");
+    EXPECT_EQ(microfmt::format("a {} b", (unsigned char)12), "a 12 b");
+    EXPECT_EQ(microfmt::format("a {} b", (unsigned short)12), "a 12 b");
 }
 
 TEST(MicrofmtTest, basic_bases) {
@@ -44,6 +67,7 @@ TEST(MicrofmtTest, padding) {
 
 TEST(MicrofmtTest, variable_width) {
     EXPECT_EQ(microfmt::format("a {>{}} b", 14, 122), "a            122 b");
+    EXPECT_EQ(microfmt::format("a {>{}} b", (unsigned)14, 122), "a            122 b");
 }
 
 TEST(MicrofmtTest, base_conversion) {
@@ -115,14 +139,15 @@ TEST(MicrofmtTest, adjacent_format) {
 
 TEST(MicrofmtTest, erroneous_input) {
     // base on non-numeric
-    EXPECT_EQ(microfmt::format("{>10:h}", "foo"), "       foo");
+    EXPECT_EQ(microfmt::format("{>10:h}"_sv, "foo"), "       foo");
     // unknown base
-    EXPECT_EQ(microfmt::format("{>10:q}", 20), "qqqqqqqq20");
-    EXPECT_EQ(microfmt::format("{>10:qq}", 20), "qqqqqqqq20");
+    EXPECT_EQ(microfmt::format("{>10:q}"_sv, 20), "qqqqqqqq20");
+    EXPECT_EQ(microfmt::format("{>10:qq}"_sv, 20), "qqqqqqqq20");
     // non-numeric variable width
-    EXPECT_EQ(microfmt::format("a {>{}} b", "foo", 122), "a 122 b");
+    EXPECT_EQ(microfmt::format("a {>{}} b"_sv, "foo", 122), "a 122 b");
     // extra inputs
-    EXPECT_EQ(microfmt::format("a {} b", "foo", "bar", "baz"), "a foo b");
+    EXPECT_EQ(microfmt::format("a {} b"_sv, "foo", "bar", "baz"), "a foo b");
     // malformed format strings
-    // EXPECT_EQ(microfmt::format("a { b", "foo", 122), "a 122 b");
+    EXPECT_EQ(microfmt::format("a { b", "foo", 122), "a { b");
+    EXPECT_EQ(microfmt::format("a {<"_sv), "a {<");
 }
