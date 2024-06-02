@@ -191,7 +191,7 @@ namespace microfmt {
             std::size_t arg_i = 0;
             auto it = fmt_begin;
             auto peek = [&] (std::size_t dist) -> char { // 0 on failure
-                return it != fmt_end ? *(it + dist) : 0;
+                return it + dist < fmt_end ? *(it + dist) : 0;
             };
             auto read_number = [&] () -> int { // -1 on failure
                 auto scan = it;
@@ -210,59 +210,61 @@ namespace microfmt {
             };
             for(; it != fmt_end; it++) {
                 if((*it == '{' || *it == '}') && peek(1) == *it) { // parse {{ and }}}} escapes
-                    str += *it;
                     it++;
-                } else if(*it == '{') {
-                    // parse format string
-                    it++;
-                    if(it == fmt_end) {
-                        break;
-                    }
-                    format_options options;
-                    // try to parse alignment
-                    if(*it == '<' || *it == '>') {
-                        options.align = *it == '<' ? alignment::left : alignment::right;
+                } else if(*it == '{' && it + 1 != fmt_end) {
+                    auto saved_it = it;
+                    auto handle_formatter = [&] () mutable {
                         it++;
-                    }
-                    // try to parse width
-                    auto width = read_number();
-                    if(width != -1) {
-                        options.width = width;
-                    } else if(*it == '{' && peek(1) == '}') { // try to parse variable width
-                        it += 2;
-                        if(it == fmt_end) {
-                            break;
+                        format_options options;
+                        // try to parse alignment
+                        if(*it == '<' || *it == '>') {
+                            options.align = *it == '<' ? alignment::left : alignment::right;
+                            it++;
                         }
-                        options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
-                    }
-                    // try to parse fill/base
-                    if(*it == ':') {
-                        it++;
-                        // try to parse fill
-                        if(*it != '}' && peek(1) != '}') {
-                            // two chars before the }, treat as fill+base
-                            options.fill = *it++;
-                            options.base = *it++;
-                        } else if(*it != '}') {
-                            // one char before the }, treat as base if possible
-                            if(*it == 'd' || *it == 'h' || *it == 'H' || *it == 'o' || *it == 'b') {
-                                options.base = *it++;
-                            } else {
-                                options.fill = *it++;
+                        // try to parse width
+                        auto width = read_number(); // handles fmt_end check
+                        if(width != -1) {
+                            options.width = width;
+                        } else if(*it == '{') { // try to parse variable width // TODO: FUCK
+                            if(peek(1) != '}') {
+                                return false;
                             }
-                        } else {
-                            break;
+                            it += 2;
+                            if(it == fmt_end) {
+                                return false;
+                            }
+                            options.width = arg_i < args.size() ? args[arg_i++].unwrap_int() : 0;
                         }
+                        // try to parse fill/base
+                        if(*it == ':') {
+                            it++; // TODO: Overflow....
+                            if(*it != '}' && peek(1) != '}') { // two chars before the }, treat as fill+base
+                                options.fill = *it++;
+                                options.base = *it++;
+                            } else if(*it != '}') { // one char before the }, treat as base if possible
+                                if(*it == 'd' || *it == 'h' || *it == 'H' || *it == 'o' || *it == 'b') {
+                                    options.base = *it++;
+                                } else {
+                                    options.fill = *it++;
+                                }
+                            } else {
+                                return false; // TODO: A way to silently recover?
+                            }
+                        }
+                        if(*it != '}') {
+                            return false; // TODO
+                        }
+                        if(arg_i < args.size()) {
+                            args[arg_i++].write(str, options);
+                        }
+                        return true;
+                    };
+                    if(handle_formatter()) {
+                        continue; // If reached here, successfully parsed and wrote a formatter. Don't write *it.
                     }
-                    if(*it != '}') {
-                        break;
-                    }
-                    if(arg_i < args.size()) {
-                        args[arg_i++].write(str, options);
-                    }
-                } else {
-                    str += *it;
+                    it = saved_it; // go back
                 }
+                str += *it;
             }
             return str;
         }
