@@ -1,16 +1,28 @@
 #include <gtest/gtest.h>
 
+#define CPP_17 0
+#if defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
+ #undef CPP_17
+ #define CPP_17 1
+#elif __cplusplus >= 201703L
+ #undef CPP_17
+ #define CPP_17 1
+#endif
+
 #include <algorithm>
 #include <iomanip>
 #include <memory>
 #include <sstream>
-#include <string_view>
+#if CPP_17
+ #include <string_view>
+#endif
 #include <string>
 #include <vector>
 using namespace std::literals;
 
 #include "microfmt.hpp"
 
+#if CPP_17
 // String views from ""sv seem to be null terminated and asan doesn't compilain about one-past the end access
 // This is just a utility to create string views that will error with out of bounds access
 std::vector<std::unique_ptr<char[]>> string_store;
@@ -21,14 +33,17 @@ std::string_view operator""_sv(const char* str, std::size_t length) {
     string_store.push_back(std::move(buffer));
     return sv;
 }
+#endif
 
 TEST(MicrofmtTest, basic) {
     EXPECT_EQ(microfmt::format("test"), "test");
     EXPECT_EQ(microfmt::format("a {} b", "foo"), "a foo b");
     EXPECT_EQ(microfmt::format("a {} b", "foo"s), "a foo b");
-    EXPECT_EQ(microfmt::format("a {} b", "foo"sv), "a foo b");
     EXPECT_EQ(microfmt::format("a {} b", 'x'), "a x b");
+    #if CPP_17
+    EXPECT_EQ(microfmt::format("a {} b", "foo"sv), "a foo b");
     EXPECT_EQ(microfmt::format("a {} b"sv, 'x'), "a x b");
+    #endif
 }
 
 TEST(MicrofmtTest, width_and_alignment) {
@@ -39,8 +54,10 @@ TEST(MicrofmtTest, width_and_alignment) {
     EXPECT_EQ(microfmt::format("a {<2} b", "foo"), "a foo b");
     EXPECT_EQ(microfmt::format("a {>2} b", "foo"), "a foo b");
     // trailing :'s
+    #if CPP_17
     EXPECT_EQ(microfmt::format("a {20:} b"_sv, "foo"), "a foo                  b");
     EXPECT_EQ(microfmt::format("a {>20:} b"_sv, "foo"), "a                  foo b");
+    #endif
 }
 
 TEST(MicrofmtTest, basic_numbers) {
@@ -129,14 +146,17 @@ TEST(MicrofmtTest, base_2) {
 TEST(MicrofmtTest, escapes) {
     EXPECT_EQ(microfmt::format("test {{ aagasdg }}"), "test { aagasdg }");
     EXPECT_EQ(microfmt::format("test {{ aagasdg }}", 1), "test { aagasdg }");
+    #if CPP_17
     EXPECT_EQ(microfmt::format("test {{ aagasdg }}"sv), "test { aagasdg }");
     EXPECT_EQ(microfmt::format("test {{ aagasdg }}"sv, 1), "test { aagasdg }");
+    #endif
 }
 
 TEST(MicrofmtTest, adjacent_format) {
     EXPECT_EQ(microfmt::format("{}{}", "foo", "bar"), "foobar");
 }
 
+#if CPP_17
 TEST(MicrofmtTest, erroneous_input) {
     // base on non-numeric
     EXPECT_EQ(microfmt::format("{>10:h}"_sv, "foo"), "       foo");
@@ -164,3 +184,4 @@ TEST(MicrofmtTest, erroneous_input) {
     EXPECT_EQ(microfmt::format("{>10:qaaaaaa"_sv, 20), "{>10:qaaaaaa");
     EXPECT_EQ(microfmt::format("{>10:qqaaaaaa"_sv, 20), "{>10:qqaaaaaa");
 }
+#endif

@@ -27,7 +27,7 @@ include(CTest)
 target_compile_options(
   microfmt
   INTERFACE
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -Wshadow -Wundef>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -Wshadow -Wundef -Wpedantic>
   $<$<CXX_COMPILER_ID:GNU>:-Wuseless-cast -Wnonnull-compare>
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
 )
@@ -64,6 +64,11 @@ add_executable(unittests unittests.cpp)
 target_link_libraries(unittests GTest::gtest_main microfmt)
 target_compile_features(unittests PRIVATE cxx_std_20)
 add_test(NAME unittests COMMAND unittests)
+
+add_executable(unittests_cpp11 unittests.cpp)
+target_link_libraries(unittests_cpp11 GTest::gtest_main microfmt)
+set_target_properties(unittests_cpp11 PROPERTIES CXX_STANDARD 11)
+add_test(NAME unittests_cpp11 COMMAND unittests_cpp11)
 
 add_executable(bench bench.cpp)
 target_link_libraries(bench PRIVATE microfmt benchmark::benchmark fmt::fmt)
