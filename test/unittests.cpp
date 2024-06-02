@@ -145,9 +145,18 @@ TEST(MicrofmtTest, erroneous_input) {
     EXPECT_EQ(microfmt::format("{>10:qq}"_sv, 20), "qqqqqqqq20");
     // non-numeric variable width
     EXPECT_EQ(microfmt::format("a {>{}} b"_sv, "foo", 122), "a 122 b");
+    // missing variable width and missing input
+    EXPECT_EQ(microfmt::format("a {>{}} b"_sv), "a  b");
     // extra inputs
     EXPECT_EQ(microfmt::format("a {} b"_sv, "foo", "bar", "baz"), "a foo b");
+    // argument eater
+    EXPECT_EQ(microfmt::format("a {<{}{<{}{} {} b"_sv, "foo", "bar", "baz"), "a {<bar{<  b");
     // malformed format strings
     EXPECT_EQ(microfmt::format("a { b", "foo", 122), "a { b");
     EXPECT_EQ(microfmt::format("a {<"_sv), "a {<");
+    EXPECT_EQ(microfmt::format("a {<a"_sv), "a {<a");
+    EXPECT_EQ(microfmt::format("a {<a}"_sv), "a {<a}");
+    EXPECT_EQ(microfmt::format("a {<{"_sv), "a {<{");
+    EXPECT_EQ(microfmt::format("a {<{}"_sv, 12, 20), "a {<20");
+    EXPECT_EQ(microfmt::format("a {<{}:"_sv, 12, 20), "a {<20:");
 }
