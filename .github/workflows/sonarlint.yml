@@ -10,7 +10,7 @@ on:
 name: sonarlint
 jobs:
   sonarcloud:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
       with:
@@ -18,13 +18,25 @@ jobs:
         fetch-depth: 0
     - name: Install sonar-scanner and build-wrapper
       uses: sonarsource/sonarcloud-github-c-cpp@v2
+    - name: Prerequisites
+      run: |
+        sudo apt install llvm
     - name: Run build-wrapper
       run: |
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCMAKE_CXX_STANDARD=11 -DMICROFMT_BUILD_TESTING=On
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCMAKE_CXX_STANDARD=11 -DMICROFMT_BUILD_TESTING=On -DMICROFMT_LLVM_COV=On -DCMAKE_CXX_COMPILER=clang++
         make -j
         cd ..
+    - name: Run tests to generate coverage information
+      run: |
+        build/test/unittests
+    - name: Run merge tool
+      run: |
+        llvm-profdata merge -sparse default.profraw -o default.profdata
+    - name: Collect the coverage
+      run: |
+        llvm-cov show --show-branches=count --instr-profile default.profdata build/test/unittests > coverage.txt
     - name: Run sonar-scanner
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
