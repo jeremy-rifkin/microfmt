@@ -49,7 +49,8 @@ namespace microfmt {
             char base = 'd';
         };
 
-        template<typename It> void do_write(std::string& out, It begin, It end, const format_options& options) {
+        template<typename It>
+        void do_write(std::string& out, It begin, It end, const format_options& options) {
             auto size = end - begin;
             if(static_cast<std::size_t>(size) >= options.width) {
                 out.append(begin, end);
@@ -98,15 +99,18 @@ namespace microfmt {
             }
         }
 
+        struct string_view {
+            const char* data;
+            std::size_t size;
+        };
+
         class format_value {
             enum class value_type {
                 char_value,
                 int64_value,
                 uint64_value,
                 string_value,
-                #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
                 string_view_value,
-                #endif
                 c_string_value,
             };
             union {
@@ -114,9 +118,7 @@ namespace microfmt {
                 std::int64_t int64_value;
                 std::uint64_t uint64_value;
                 const std::string* string_value;
-                #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
-                std::string_view string_view_value;
-                #endif
+                string_view string_view_value;
                 const char* c_string_value;
             };
             value_type value;
@@ -134,7 +136,8 @@ namespace microfmt {
             format_value(unsigned long long int_val) : uint64_value(int_val), value(value_type::uint64_value) {}
             format_value(const std::string& string) : string_value(&string), value(value_type::string_value) {}
             #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
-            format_value(std::string_view sv) : string_view_value(sv), value(value_type::string_view_value) {}
+            format_value(std::string_view sv)
+                : string_view_value{sv.data(), sv.size()}, value(value_type::string_view_value) {}
             #endif
             format_value(const char* c_string) : c_string_value(c_string), value(value_type::c_string_value) {}
 
@@ -173,11 +176,9 @@ namespace microfmt {
                     case value_type::string_value:
                         do_write(out, string_value->begin(), string_value->end(), options);
                         break;
-                    #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
                     case value_type::string_view_value:
-                        do_write(out, string_view_value.begin(), string_view_value.end(), options);
+                        do_write(out, string_view_value.data, string_view_value.data + string_view_value.size, options);
                         break;
-                    #endif
                     case value_type::c_string_value:
                         do_write(out, c_string_value, c_string_value + std::strlen(c_string_value), options);
                         break;
