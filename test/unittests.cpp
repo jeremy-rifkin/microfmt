@@ -66,6 +66,8 @@ TEST(MicrofmtTest, basic_numbers) {
     EXPECT_EQ(microfmt::format("a {} b", (long)12), "a 12 b");
     EXPECT_EQ(microfmt::format("a {} b", (unsigned char)12), "a 12 b");
     EXPECT_EQ(microfmt::format("a {} b", (unsigned short)12), "a 12 b");
+    EXPECT_EQ(microfmt::format("{4}", -30), "-30 ");
+    EXPECT_EQ(microfmt::format("{>4}", -30), " -30");
 }
 
 TEST(MicrofmtTest, basic_bases) {
@@ -185,3 +187,7 @@ TEST(MicrofmtTest, erroneous_input) {
     EXPECT_EQ(microfmt::format("{>10:qqaaaaaa"_sv, 20), "{>10:qqaaaaaa");
 }
 #endif
+
+TEST(MicrofmtTest, regression_qqq) {
+    EXPECT_EQ(microfmt::format("#{<{}}", 2, 0), "#0 ");
+}
